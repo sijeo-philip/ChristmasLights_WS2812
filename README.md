@@ -1,172 +1,123 @@
-Christmas Lights – Music Reactive WS2812 System (Raspberry Pi 4)
+Christmas Lights – Music Reactive WS2812 LED System (Raspberry Pi 4)
 
-A fully automated LED + Audio engine with supervisor + systemd integration
+Real-time audio-reactive LED lighting using WS2812 LED strips, MP3 playback, FFT analysis, beat detection, OLED display, GPIO buttons, and a Python supervisor to manage the LED and audio engines.
 
-This project creates a real-time audio-reactive LED lighting system using a Raspberry Pi 4, WS2812 LED strips, and MP3 audio playback.
-It includes:
+⭐ Features
+🔊 Audio Reactive Effects
 
-Real-time beat detection (kick / snare / volume)
+Real-time FFT analysis
 
-Musical pitch → color mapping (12-note LED mapping)
+Kick / Snare / Volume detection
 
-Multiple lighting modes:
+Lead melody → LED color mapping
 
-Music Reactive
+Smooth glissando transitions
 
-Ambient
+Per-frame LED animations (80 FPS)
 
-Tree (festive)
+💡 Lighting Modes
+Mode	Description
+Music	Full reactive mode (pitch + beats)
+Ambient	Slow breathing colors
+Off	LEDs off
+Tree	Festive twinkling lights
+Chase	Rainbow bar running across strip
+Sparkle	Random white-blue glitter
+🧰 Supervisor Architecture
 
-Chase (rainbow bar)
+Starts LED engine
 
-Sparkle (white/blue glitter)
+Waits for socket to initialize
 
-Off
+Starts Audio engine
 
-Automatic playback looping through songs
+Restarts either if crashed
 
-OLED display support (SSD1306)
+Logs stored independently in logs/
 
-GPIO button controls (Next, Previous, Play/Pause, Mode)
+🔘 Button Controls
+Button	Action
+MODE	Cycle through modes
+NEXT	Next song
+PREV	Previous song
+PLAY	Pause / Resume
+🖥️ OLED Display (SSD1306)
 
-Supervisor system to manage multiple engines
+Shows:
 
-Systemd boot-time automation (no sudo required for code execution)
+Playing: <song>
+Mode: Music / Tree / Chase / Sparkle
 
 📁 Project Structure
 musical_lights/
 │
 ├── src/
-│   ├── led_engine.py        # WS2812 LED animation engine
-│   ├── audio_engine.py      # MP3 processing + FFT + beat detection
-│   ├── buttons.py           # GPIO button input
-│   ├── oled_i2c.py          # Optional OLED display helper
-│   ├── protocol.py          # Message format between engines
+│   ├── led_engine.py
+│   ├── audio_engine.py
+│   ├── buttons.py
+│   ├── oled_i2c.py
+│   ├── protocol.py
 │
-├── supervisor.py            # Supervises LED & Audio engines (restarts if crashed)
-│
+├── supervisor.py
 ├── lib/
-│   └── libeffects.so        # Compiled C acceleration library
+│   └── libeffects.so
 │
-├── songs/                   # Place MP3 songs here
-├── logs/                    # LED + Audio logs written here
-│
-├── requirements.txt         # Python dependencies
-├── build.sh                 # Builds libeffects.so
-└── README.md                # This file
+├── songs/
+├── logs/
+├── build.sh
+├── requirements.txt
+└── README.md
 
-🧠 How the System Works
-🟦 1. LED Engine (led_engine.py)
-
-This engine:
-
-Drives WS2812 LEDs using the rpi_ws281x library
-
-Responds to real-time commands from the audio engine
-
-Supports six modes:
-
-0 = MUSIC (pitch + beat reactive)
-1 = AMBIENT (slow color fade)
-2 = OFF
-3 = TREE (festive green/red/gold twinkles)
-4 = CHASE (rainbow scanning bar)
-5 = SPARKLE (random white/blue glitter)
-
-
-The LED engine listens on a UNIX socket:
-
-/tmp/musical_lights.sock
-
-
-The audio engine sends frames like:
-
-STATE <mode> <note> <level> <gliss> <kick> <snare>
-
-
-The LED engine updates animations at ~80 FPS.
-
-🟩 2. Audio Engine (audio_engine.py)
-
-The audio engine:
-
-Plays MP3 files using ffmpeg
-
-Extracts beat, bass, snare, lead pitch, volume, using FFT
-
-Sends LED animation parameters via UNIX socket
-
-Responds to GPIO buttons:
-
-Button	Function
-MODE	Cycle through modes
-NEXT	Next song
-PREV	Previous song
-PLAY	Pause / Resume
-
-OLED display updates with:
-
-Playing: <song>
-Mode: Music / Tree / Chase / ...
-
-🟥 3. Supervisor (supervisor.py)
-
-The supervisor:
-
-Starts LED engine first
-
-Waits for /tmp/musical_lights.sock
-
-Starts audio engine next
-
-Restarts LED engine if it crashes
-
-Restarts audio engine if it crashes
-
-Ensures both engines run in independent processes
-
-Writes logs to:
-
-logs/led_engine.log
-logs/audio_engine.log
-
-Supervisor Architecture
+🧠 System Architecture
 +----------------------+
 |   supervisor.py      |
 |----------------------|
-| Starts LED Engine    |-----> led_engine.log
+| Starts LED Engine    |
 | Waits for socket     |
-| Starts Audio Engine  |-----> audio_engine.log
-| Restarts if crash    |
-+----------------------+
+| Starts Audio Engine  |
+| Restarts on failure  |
++----------+-----------+
+           |
+    +------v-------+
+    | LED Engine   |
+    | WS2812 FX    |
+    +--------------+
+           ^
+           |
+    +------v-------+
+    | Audio Engine |
+    | FFT + Beats  |
+    +--------------+
 
-
-This ensures maximum stability.
-
-⚙️ Setup Instructions
-1️⃣ Install system libraries
+⚙️ Installation
+1️⃣ Install system dependencies
 sudo apt update
-sudo apt install python3-pip ffmpeg libatlas-base-dev python3-rpi.gpio
-sudo apt install python3-rpi-ws281x
+sudo apt install ffmpeg python3-pip python3-rpi.gpio python3-rpi-ws281x libatlas-base-dev
 
-2️⃣ Create a Python virtual environment
+2️⃣ Create and activate virtual environment
 python3 -m venv /home/sijeo/christmas_lights
 source /home/sijeo/christmas_lights/bin/activate
 
 
-Install project requirements:
+Install Python requirements:
 
 pip install -r requirements.txt
 
-3️⃣ Build C effects library
+3️⃣ Build the C effects library
 ./build.sh
 
-4️⃣ Place songs
-cp your_mp3_files.mp3 songs/
+4️⃣ Add MP3 files
+cp *.mp3 songs/
 
-🚀 Automating with systemd
-Create:
-/etc/systemd/system/christmas_lights.service
+🚀 Running Manually
+source /home/sijeo/christmas_lights/bin/activate
+python3 supervisor.py
+
+🔁 Automate with systemd
+
+Create the service file:
+
+sudo nano /etc/systemd/system/christmas_lights.service
 
 
 Paste:
@@ -191,67 +142,59 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 
-Enable & Start
+
+Reload and enable:
+
 sudo systemctl daemon-reload
 sudo systemctl enable christmas_lights.service
 sudo systemctl start christmas_lights.service
 
-Check Status
-systemctl status christmas_lights.service
-
-View Live Logs
-
-Supervisor:
-
+🧪 Monitoring & Debugging
+Supervisor logs:
 journalctl -fu christmas_lights
 
-
-LED engine:
-
+LED engine log:
 tail -f logs/led_engine.log
 
-
-Audio engine:
-
+Audio engine log:
 tail -f logs/audio_engine.log
-
-🧪 Testing After Boot
-sudo systemctl restart christmas_lights.service
-
-
-Ensure:
-
-Music plays
-
-LEDs animate
-
-Buttons work
-
-OLED updates
 
 🛠 Troubleshooting
-❗ LEDs not updating
+LEDs not turning on
 
-Check LED log:
+Check power supply (5V 10A recommended)
 
-tail -f logs/led_engine.log
+Verify ground is shared with Raspberry Pi
 
-❗ No sound
+No sound
 
-Check audio log:
+Ensure correct ALSA device in audio_engine.py
 
-tail -f logs/audio_engine.log
+Buttons not working
 
-❗ Supervisor restarts instantly
+Verify wiring to BCM pins:
 
-Check folder permissions:
+MODE = 5
+NEXT = 6
+PREV = 13
+PLAY = 19
 
-chmod 777 logs
+OLED not responding
 
-❗ Buttons do not work
+Check I²C bus:
 
-Ensure:
+sudo i2cdetect -y 1
 
-GPIO BCM pins: 5, 6, 13, 19
-Pull-up: PUD_UP
-Buttons short to GND
+📜 License
+
+MIT License
+
+🙌 Acknowledgements
+
+Raspberry Pi Foundation
+
+rpi_ws281x Library
+
+FFmpeg Team
+
+Adafruit SSD1306 Library
