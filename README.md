@@ -68,6 +68,7 @@ musical_lights/
 ├── requirements.txt
 └── README.md
 
+
 🧠 System Architecture
 +----------------------+
 |   supervisor.py      |
