@@ -1,0 +1,6 @@
+numpy
+rpi_ws281x
+adafruit-circuitpython-ssd1306
+pillow
+librosa
+soundfile

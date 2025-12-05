@@ -1,0 +1,19 @@
+[Unit]
+Description=Christmas Lights (Supervisor)
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=sijeo
+WorkingDirectory=/home/sijeo/musical_lights
+
+Environment="VIRTUAL_ENV=/home/sijeo/christmas_lights"
+Environment="PATH=/home/sijeo/christmas_lights/bin:/usr/bin:/bin"
+
+ExecStart=/home/sijeo/christmas_lights/bin/python3 supervisor.py
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
